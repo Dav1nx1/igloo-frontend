@@ -2,9 +2,8 @@ import type { NextPage } from 'next'
 import Head from 'next/head'
 import React from 'react'
 import styles from '../styles/Home.module.css'
-import Navbar from './components/Navbar'
-import UsersTable from './components/Table'
-import { getAllUsers } from './services/userService'
+import Navbar from '../components/Navbar'
+import UsersTable from '../components/Table'
 
 const HomePage: NextPage = () => {
 
@@ -47,9 +46,6 @@ const HomePage: NextPage = () => {
           <UsersTable />
         </section>
       </main>
-      <footer className={styles.footer}>
-        
-      </footer>
     </div>
   )
 }

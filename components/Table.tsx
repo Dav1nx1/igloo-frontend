@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { useTheme } from '@mui/material/styles';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -12,89 +11,18 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import IconButton from '@mui/material/IconButton';
-import FirstPageIcon from '@mui/icons-material/FirstPage';
-import KeyboardArrowLeft from '@mui/icons-material/KeyboardArrowLeft';
-import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight';
-import LastPageIcon from '@mui/icons-material/LastPage';
 
 import OutlinedInput from '@mui/material/OutlinedInput';
 import InputLabel from '@mui/material/InputLabel';
 import InputAdornment from '@mui/material/InputAdornment';
 import FormControl from '@mui/material/FormControl';
 import Search from '@mui/icons-material/Search';
-
-import router, { useRouter } from 'next/router'
+import router from 'next/router'
 import axios from 'axios';
+import StateComponent from '../interfaces/state'
+import TablePaginationActions from './TablePaginationActions';
 
-interface TablePaginationActionsProps {
-	count: number;
-	page: number;
-	rowsPerPage: number;
-	onPageChange: (
-		event: React.MouseEvent<HTMLButtonElement>,
-		newPage: number,
-	) => void;
-}
-
-interface State {
-	userName: string;
-}
-
-function TablePaginationActions(props: TablePaginationActionsProps) {
-    const theme = useTheme();
-    const { count, page, rowsPerPage, onPageChange } = props;
-  
-    const handleFirstPageButtonClick = (
-      event: React.MouseEvent<HTMLButtonElement>,
-    ) => {
-      onPageChange(event, 0);
-    };
-  
-    const handleBackButtonClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-      onPageChange(event, page - 1);
-    };
-  
-    const handleNextButtonClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-      onPageChange(event, page + 1);
-    };
-  
-    const handleLastPageButtonClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-      onPageChange(event, Math.max(0, Math.ceil(count / rowsPerPage) - 1));
-    };
-  
-    return (
-      <Box sx={{ flexShrink: 0, ml: 2.5 }}>
-        <IconButton
-          onClick={handleFirstPageButtonClick}
-          disabled={page === 0}
-          aria-label="first page"
-        >
-          {theme.direction === 'rtl' ? <LastPageIcon /> : <FirstPageIcon />}
-        </IconButton>
-        <IconButton
-          onClick={handleBackButtonClick}
-          disabled={page === 0}
-          aria-label="previous page"
-        >
-          {theme.direction === 'rtl' ? <KeyboardArrowRight /> : <KeyboardArrowLeft />}
-        </IconButton>
-        <IconButton
-          onClick={handleNextButtonClick}
-          disabled={page >= Math.ceil(count / rowsPerPage) - 1}
-          aria-label="next page"
-        >
-          {theme.direction === 'rtl' ? <KeyboardArrowLeft /> : <KeyboardArrowRight />}
-        </IconButton>
-        <IconButton
-          onClick={handleLastPageButtonClick}
-          disabled={page >= Math.ceil(count / rowsPerPage) - 1}
-          aria-label="last page"
-        >
-          {theme.direction === 'rtl' ? <FirstPageIcon /> : <LastPageIcon />}
-        </IconButton>
-      </Box>
-    );
-  }
+import { getAllUsers } from 'services/userService';
 
 function createData(
     name: string,
@@ -107,28 +35,25 @@ function createData(
     return { name, username, email, address, city, id };
 } 
 
-export default function UsersTable(props) {
+export default function UsersTable(props: any) {
 
 	const [page, setPage] = React.useState(0);
-  	const [rowsPerPage, setRowsPerPage] = React.useState(5);
-	const [values, setValues] = React.useState<State>({ userName: '' }); 
-
-	const [rows, setRows] = React.useState<State>([])
+  const [rowsPerPage, setRowsPerPage] = React.useState(5);
+	const [values, setValues] = React.useState<StateComponent>({ userName: '' }); 
+	const [rows, setRows] = React.useState<Array<{ name: string, username: string, email: string, address: string, city: string, id: string }>>([])
 
 
 	const fetchUsers = async () => {
-		const response = await fetch( 'http://localhost:3000/users');
-	
-		const json = await response.json();
-		setRows(json.map( user => createData(user.name, user.username, user.email, `${user.address.street} - ${user.address.suite}`, user.address.city, user.id) ))
-	  }
+		const response = await getAllUsers()
+		setRows(response.map( (user: { name: string; username: string; email: string; address: { street: any; suite: any; city: string; }; id: number; }) => createData(user.name, user.username, user.email, `${user.address.street} - ${user.address.suite}`, user.address.city, user.id) ))
+	}
 	
 	  React.useEffect( () => {
 		fetchUsers()
 	  }, [])
 	  
 	const handleChange =
-    (prop: keyof State) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    (prop: keyof StateComponent) => (event: React.ChangeEvent<HTMLInputElement>) => {
       setValues({ ...values, [prop]: event.target.value });
     };
 
@@ -143,16 +68,16 @@ export default function UsersTable(props) {
     setPage(newPage);
   };
 
-  const handleSearchInput = async (event: React.KeyboardEvent<HTMLTextAreaElement | HTMLInputElement>) => {
-	const searchTerm = event.target.value
-	if (searchTerm.length >= 3) {
-		const response = await axios.post('http://localhost:3000/users/search', { name: searchTerm })
-		const data = await response.data
-		setRows(data.map( user => createData(user.name, user.username, user.email, `${user.address.street} - ${user.address.suite}`, user.address.city, user.id) ))
-	}
-	if (searchTerm.length < 3) {
-		fetchUsers()
-	}
+  const handleSearchInput = async (event:any) => {
+		const searchTerm = event.target.value
+		if (searchTerm.length >= 3) {
+			const response = await axios.post('http://localhost:3000/users/search', { name: searchTerm })
+			const data = await response.data
+			setRows(data.map( (user: { name: string; username: string; email: string; address: { street: any; suite: any; city: string; }; id: number; }) => createData(user.name, user.username, user.email, `${user.address.street} - ${user.address.suite}`, user.address.city, user.id) ))
+		}
+		if (searchTerm.length < 3) {
+			fetchUsers()
+		}
   }
 
   const handleChangeRowsPerPage = (
@@ -162,7 +87,7 @@ export default function UsersTable(props) {
     setPage(0);
   };
 
-  const handleClick = (userId:number) =>  {
+  const handleClick = (userId:string) =>  {
     router.push(`/users/${userId}`)
   } 
 
@@ -207,7 +132,7 @@ export default function UsersTable(props) {
 							? rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
 							: rows
 						).map((row) => (
-							<TableRow key={row.name} onClick={(event) => handleClick(event.target.id)} id={row.id}>
+							<TableRow key={row.id} onClick={() => handleClick(row.id)}>
 								<TableCell component="th" scope="row" id={row.id}>
 									{row.name}
 								</TableCell>
